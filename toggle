@@ -1,0 +1,118 @@
+#!/bin/bash
+
+PROXY_HOST=<proxy.host>
+PROXY_PORT=<proxy.port>
+
+if [ $# = 0 ]; then
+        echo "Error: no args"
+        exit 1
+
+elif [ $1 = "on" ]; then
+        # apt configuration
+        sudo sed -i.bak '/http[s]::proxy/Id' /etc/apt/apt.conf
+        sudo sed -i.bak '/ftp::proxy/Id' /etc/apt/apt.conf
+        sudo tee -a /etc/apt/apt.conf <<EOF
+Acquire::ftp::proxy "ftp://$PROXY_HOST:$PROXY_PORT/";
+Acquire::http::proxy "http://$PROXY_HOST:$PROXY_PORT/";
+Acquire::https::proxy "https://$PROXY_HOST:$PROXY_PORT/";
+EOF
+        # global environment variables
+        sudo sed -i.bak "/all_proxy/Id" /etc/environment
+        sudo sed -i.bak "/ALL_PROXY/Id" /etc/environment
+        sudo sed -i.bak "/http_proxy/Id" /etc/environment
+        sudo sed -i.bak "/HTTP_PROXY/Id" /etc/environment
+        sudo sed -i.bak "/https_proxy/Id" /etc/environment
+        sudo sed -i.bak "/HTTPS_PROXY/Id" /etc/environment
+        sudo sed -i.bak "/ftp_proxy/Id" /etc/environment
+        sudo sed -i.bak "/FTP_PROXY/Id" /etc/environment
+        sudo tee -a /etc/environment <<EOF
+all_proxy="socks://$PROXY_HOST:$PROXY_PORT/"
+ALL_PROXY="socks://$PROXY_HOST:$PROXY_PORT/"
+http_proxy="http://$PROXY_HOST:$PROXY_PORT"
+HTTP_PROXY="http://$PROXY_HOST:$PROXY_PORT"
+https_proxy="http://$PROXY_HOST:$PROXY_PORT"
+HTTPS_PROXY="http://$PROXY_HOST:$PROXY_PORT"
+ftp_proxy="ftp://$PROXY_HOST:$PROXY_PORT"
+FTP_PROXY="ftp://$PROXY_HOST:$PROXY_PORT"
+EOF
+        # .profile
+        sed -i.bak '/all_proxy/Id' $HOME/.profile
+        sed -i.bak '/ALL_PROXY/Id' $HOME/.profile
+        sed -i.bak '/http_proxy/Id' $HOME/.profile
+        sed -i.bak '/HTTP_PROXY/Id' $HOME/.profile
+        sed -i.bak '/https_proxy/Id' $HOME/.profile
+        sed -i.bak '/HTTPS_PROXY/Id' $HOME/.profile
+        sed -i.bak '/ftp_proxy/Id' $HOME/.profile
+        sed -i.bak '/FTP_PROXY/Id' $HOME/.profile
+        tee -a $HOME/.profile <<EOF
+export all_proxy="socks://$PROXY_HOST:$PROXY_PORT/"
+export ALL_PROXY="socks://$PROXY_HOST:$PROXY_PORT/"
+export http_proxy="http://$PROXY_HOST:$PROXY_PORT"
+export HTTP_PROXY="http://$PROXY_HOST:$PROXY_PORT"
+export https_proxy="http://$PROXY_HOST:$PROXY_PORT"
+export HTTPS_PROXY="http://$PROXY_HOST:$PROXY_PORT"
+export ftp_proxy="ftp://$PROXY_HOST:$PROXY_PORT"
+export FTP_PROXY="ftp://$PROXY_HOST:$PROXY_PORT"
+EOF
+        # git configuration
+        git config --global http.proxy http://$PROXY_HOST:$PROXY_PORT
+        git config --global https.proxy https://$PROXY_HOST:$PROXY_PORT
+        # curl configuration
+        sed -i.bak '/proxy/Id' $HOME/.curlrc
+        tee -a $HOME/.curlrc <<EOF
+proxy = "http://$PROXY_HOST:$PROXY_PORT"
+EOF
+        # wget
+        sudo sed -i.bak '/http_proxy/Id' /etc/wgetrc
+        sudo sed -i.bak '/https_proxy/Id' /etc/wgetrc
+        sudo tee -a /etc/wgetrc <<EOF
+http_proxy=http://$PROXY_HOST:$PROXY_PORT
+https_proxy=https://$PROXY_HOST:$PROXY_PORT
+EOF
+	# npm
+	npm config set proxy http://$PROXY_HOST:$PROXY_PORT
+
+elif [ $1 = "off" ]; then
+        sudo sed -i.bak "/http::proxy/Id" /etc/apt/apt.conf
+        sudo sed -i.bak "/https::proxy/Id" /etc/apt/apt.conf
+        sudo sed -i.bak "/ftp::proxy/Id" /etc/apt/apt.conf
+        sudo sed -i.bak "/all_proxy/Id" /etc/environment
+        sudo sed -i.bak "/ALL_PROXY/Id" /etc/environment
+        sudo sed -i.bak "/http_proxy/Id" /etc/environment
+        sudo sed -i.bak "/HTTP_PROXY/Id" /etc/environment
+        sudo sed -i.bak "/https_proxy/Id" /etc/environment
+        sudo sed -i.bak "/HTTPS_PROXY/Id" /etc/environment
+        sudo sed -i.bak "/ftp_proxy/Id" /etc/environment
+        sudo sed -i.bak "/FTP_PROXY/Id" /etc/environment
+        sed -i.bak '/all_proxy/Id' $HOME/.profile
+        sed -i.bak '/ALL_PROXY/Id' $HOME/.profile
+        sed -i.bak '/http_proxy/Id' $HOME/.profile
+        sed -i.bak '/HTTP_PROXY/Id' $HOME/.profile
+        sed -i.bak '/https_proxy/Id' $HOME/.profile
+        sed -i.bak '/HTTPS_PROXY/Id' $HOME/.profile
+        sed -i.bak '/ftp_proxy/Id' $HOME/.profile
+        sed -i.bak '/FTP_PROXY/Id' $HOME/.profile
+        tee -a $HOME/.profile <<EOF
+export all_proxy=
+export ALL_PROXY=
+export http_proxy=
+export HTTP_PROXY=
+export https_proxy=
+export HTTPS_PROXY=
+export ftp_proxy=
+export FTP_PROXY=
+EOF
+        git config --global --remove-section http
+        git config --global --remove-section https
+        sed -i.bak '/proxy/Id' $HOME/.curlrc
+        sudo sed -i.bak '/http_proxy/Id' /etc/wgetrc
+        sudo sed -i.bak '/https_proxy/Id' /etc/wgetrc
+	      npm config delete proxy
+
+else
+        echo "arg: 'on' or 'off'"
+        exit 1
+
+fi
+
+exit 0
